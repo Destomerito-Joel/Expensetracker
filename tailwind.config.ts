@@ -1,0 +1,65 @@
+import type { Config } from 'tailwindcss'
+
+export default {
+  darkMode: 'class',
+  content: [
+    './app/**/*.{vue,js,ts}',
+    './components/**/*.{vue,js,ts}',
+    './layouts/**/*.vue',
+    './pages/**/*.vue',
+    './plugins/**/*.{js,ts}',
+    './error.vue'
+  ],
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['Roboto', 'Poppins', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      },
+      colors: {
+        // Silk theme (light)
+        'silk-primary': 'oklch(23.27% 0.0249 284.3)',
+        'silk-primary-content': 'oklch(94.22% 0.2505 117.44)',
+        'silk-secondary': 'oklch(23.27% 0.0249 284.3)',
+        'silk-secondary-content': 'oklch(73.92% 0.2135 50.94)',
+        'silk-accent': 'oklch(23.27% 0.0249 284.3)',
+        'silk-accent-content': 'oklch(88.92% 0.2061 189.9)',
+        'silk-neutral': 'oklch(20% 0 0)',
+        'silk-neutral-content': 'oklch(80% 0.0081 61.42)',
+        'silk-base-100': 'oklch(97% 0.0035 67.78)',
+        'silk-base-200': 'oklch(95% 0.0081 61.42)',
+        'silk-base-300': 'oklch(90% 0.0081 61.42)',
+        'silk-base-content': 'oklch(40% 0.0081 61.42)',
+        'silk-info': 'oklch(80.39% 0.1148 241.68)',
+        'silk-info-content': 'oklch(30.39% 0.1148 241.68)',
+        'silk-success': 'oklch(83.92% 0.0901 136.87)',
+        'silk-success-content': 'oklch(23.92% 0.0901 136.87)',
+        'silk-warning': 'oklch(83.92% 0.1085 80)',
+        'silk-warning-content': 'oklch(43.92% 0.1085 80)',
+        'silk-error': 'oklch(75.1% 0.1814 22.37)',
+        'silk-error-content': 'oklch(35.1% 0.1814 22.37)',
+        // Abyss theme (dark)
+        'abyss-primary': 'oklch(92% 0.2653 125)',
+        'abyss-primary-content': 'oklch(50% 0.2653 125)',
+        'abyss-secondary': 'oklch(83.27% 0.0764 298.3)',
+        'abyss-secondary-content': 'oklch(43.27% 0.0764 298.3)',
+        'abyss-accent': 'oklch(43% 0 0)',
+        'abyss-accent-content': 'oklch(98% 0 0)',
+        'abyss-neutral': 'oklch(30% 0.08 209)',
+        'abyss-neutral-content': 'oklch(90% 0.076 70.697)',
+        'abyss-base-100': 'oklch(20% 0.08 209)',
+        'abyss-base-200': 'oklch(15% 0.08 209)',
+        'abyss-base-300': 'oklch(10% 0.08 209)',
+        'abyss-base-content': 'oklch(90% 0.076 70.697)',
+        'abyss-info': 'oklch(74% 0.16 232.661)',
+        'abyss-info-content': 'oklch(29% 0.066 243.157)',
+        'abyss-success': 'oklch(79% 0.209 151.711)',
+        'abyss-success-content': 'oklch(26% 0.065 152.934)',
+        'abyss-warning': 'oklch(84.8% 0.1962 84.62)',
+        'abyss-warning-content': 'oklch(44.8% 0.1962 84.62)',
+        'abyss-error': 'oklch(65% 0.1985 24.22)',
+        'abyss-error-content': 'oklch(27% 0.1985 24.22)',
+      },
+    },
+  },
+  plugins: [],
+} satisfies Config

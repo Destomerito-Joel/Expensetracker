@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Remove default link colors and styles */
+@layer base {
+  a {
+    @apply no-underline;
+    color: inherit;
+  }
+
+  /* Remove default focus styles */
+  button:focus,
+  input:focus,
+  select:focus,
+  textarea:focus {
+    outline: none;
+  }
+
+  /* Remove default browser select styling */
+  select {
+    appearance: none;
+    background-image: none;
+  }
+
+  option {
+    color: inherit;
+    background-color: inherit;
+  }
+
+  /* Dark mode select options */
+  .dark option {
+    background-color: oklch(20% 0.08 209);
+    color: oklch(90% 0.076 70.697);
+  }
+
+  /* Light mode select options */
+  option {
+    background-color: oklch(97% 0.0035 67.78);
+    color: oklch(40% 0.0081 61.42);
+  }
+
+  /* Remove input number spinner */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+}
