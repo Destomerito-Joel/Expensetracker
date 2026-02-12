@@ -66,7 +66,5 @@ export default defineNuxtConfig({
   typescript: {
     includeWorkspace: true
   },
-  routeRules: {
-    "/**": { middleware: ["mobile-only"] }
-  }
+  
 });

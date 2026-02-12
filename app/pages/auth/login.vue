@@ -1,112 +1,104 @@
 <template>
-  <div class="bg-silk-neutral dark:bg-abyss-neutral h-screen flex justify-center items-center">
-    <div class="bg-silk-base-100 dark:bg-abyss-base-100 h-4/5 w-11/12 rounded-3xl px-4">
-      <div class="flex flex-col justify-center items-center">
-        <div class="text-5xl font-semibold mt-20 mb-2 text-silk-base-content dark:text-abyss-base-content">Welcome</div>
-
-        <div class="tracking-wider font-bold text-sm flex mb-4 items-center gap-2">
-          <div class="h-3 w-3 bg-silk-base-content dark:bg-abyss-base-content rounded-full"></div>
-          Sign in to track your expenses
-        </div>
-
-        <!-- Google Sign In -->
-        <button
-          class="w-full py-4 rounded-full mb-4 flex text-xl gap-3 items-center justify-center bg-silk-neutral dark:bg-abyss-neutral text-silk-neutral-content dark:text-abyss-neutral-content hover:opacity-90 disabled:opacity-50"
-          @click="signInWithGoogle"
-          :disabled="authStore.loading"
-        >
-          <i class="pi pi-google text-3xl"></i>
-          Sign in with Google
-        </button>
-
-        <div class="flex justify-center items-center gap-3 mb-4">
-          <div class="border border-silk-base-300 dark:border-abyss-base-300 w-1/6"></div>
-          <div class="font-semibold text-silk-base-content dark:text-abyss-base-content">or continue with email</div>
-          <div class="border border-silk-base-300 dark:border-abyss-base-300 w-1/6"></div>
-        </div>
-
-        <div class="w-full max-w-md">
-          <div class="mb-4">
-            <label class="text-xl font-bold mb-2 block text-silk-base-content dark:text-abyss-base-content">Email</label>
-            <input
-              v-model="email"
-              class="w-full px-4 py-6 text-silk-base-content dark:text-abyss-base-content placeholder-silk-base-300 dark:placeholder-abyss-neutral text-sm rounded-full bg-silk-base-200 dark:bg-abyss-base-100 border-2 border-silk-base-300 dark:border-abyss-neutral focus:border-silk-info dark:focus:border-abyss-info focus:outline-none transition-colors"
-              type="email"
-              placeholder="youremail@gmail.com"
-            />
-          </div>
-
-          <div class="mb-4">
-            <label class="text-xl font-bold mb-2 block text-silk-base-content dark:text-abyss-base-content">Password</label>
-            <input
-              v-model="password"
-              class="w-full px-4 py-6 text-silk-base-content dark:text-abyss-base-content placeholder-silk-base-300 dark:placeholder-abyss-neutral text-sm rounded-full bg-silk-base-200 dark:bg-abyss-base-100 border-2 border-silk-base-300 dark:border-abyss-neutral focus:border-silk-info dark:focus:border-abyss-info focus:outline-none transition-colors"
-              type="password"
-              placeholder="Enter your password"
-            />
-          </div>
-
-          <div
-            v-if="authStore.error"
-            class="text-silk-error dark:text-abyss-error mb-3 font-semibold"
-          >
-            {{ authStore.error }}
-          </div>
-
-          <button
-            @click="signIn"
-            class="w-full py-4 rounded-full font-semibold flex text-xl gap-3 items-center justify-center bg-silk-neutral dark:bg-abyss-neutral text-silk-neutral-content dark:text-abyss-neutral-content hover:opacity-90 disabled:opacity-50"
-            :disabled="authStore.loading"
-          >
-            <span v-if="authStore.loading">Signing in....</span>
-            <span v-else>Sign in</span>
-          </button>
-
-          <div class="text-center mt-4">
-            <NuxtLink to="/auth/recover" class="text-sm font-semibold text-silk-info dark:text-abyss-info hover:opacity-80 transition-opacity">
-              Forgot your password?
-            </NuxtLink>
-          </div>
-        </div>
-
-        <div class="flex justify-center items-center mb-5 gap-1 mt-4 text-silk-base-content dark:text-abyss-base-content">
-          Don't have an account?
-          <NuxtLink to="/auth/signup" class="font-semibold text-silk-info dark:text-abyss-info">
-            Sign up
-          </NuxtLink>
-        </div>
-      </div>
+  <section class="space-y-6">
+    <div class="space-y-1">
+      <h1 class="text-base font-semibold tracking-tight text-slate-900">
+        Sign in
+      </h1>
+      <p class="text-xs text-slate-500">
+        Access your bags, orders, and fitting data.
+      </p>
     </div>
-  </div>
+
+    <div v-if="submitError" class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
+      {{ submitError }}
+    </div>
+
+    <form class="space-y-4" @submit.prevent="onSubmit">
+      <BaseInput
+        v-model="email"
+        label="Email"
+        type="email"
+        :error="emailError"
+      />
+      <BaseInput
+        v-model="password"
+        label="Password"
+        type="password"
+        :error="passwordError"
+      />
+
+      <div class="flex items-center justify-between text-xs">
+        <BaseCheckbox
+          v-model="remember"
+          label="Keep me signed in"
+        />
+        <NuxtLink to="/auth/recover" class="text-slate-600 hover:text-slate-900">
+          Forgot password?
+        </NuxtLink>
+      </div>
+
+      <BaseButton
+        block
+        type="submit"
+        :loading="auth.loading"
+      >
+        Continue
+      </BaseButton>
+    </form>
+
+    <p class="text-center text-[11px] text-slate-500">
+      New to Fairway?
+      <NuxtLink to="/auth/register" class="font-medium text-slate-800 underline">
+        Create an account
+      </NuxtLink>
+    </p>
+  </section>
 </template>
 
 <script setup lang="ts">
-definePageMeta({
-   layout:'auth',
-});
 import { ref } from "vue"
+import BaseInput from "~/components/ui/BaseInput.vue"
+import BaseButton from "~/components/ui/BaseButton.vue"
+import BaseCheckbox from "~/components/ui/BaseCheckbox.vue"
 import { useAuthenticationStore } from "~/stores/authentication"
 
-const authStore = useAuthenticationStore()
+definePageMeta({
+  layout: "auth",
+})
+
+const auth = useAuthenticationStore()
+const router = useRouter()
 
 const email = ref("")
 const password = ref("")
+const remember = ref(true)
 
-const signIn = async () => {
-  if (!email.value || !password.value) {
-    authStore.error = "Please fill all fields"
-    return
-  }
+const submitError = ref("")
+const emailError = ref("")
+const passwordError = ref("")
 
-  try {
-    await authStore.login(email.value, password.value)
-    await navigateTo("/dashboard")
-  } catch {
-    // error already handled in store
-  }
+const validate = () => {
+  emailError.value = ""
+  passwordError.value = ""
+  submitError.value = ""
+
+  const e = email.value.trim()
+  if (!e) emailError.value = "Email is required"
+  else if (!/^\S+@\S+\.\S+$/.test(e)) emailError.value = "Enter a valid email"
+
+  if (!password.value) passwordError.value = "Password is required"
+
+  return !emailError.value && !passwordError.value
 }
 
-const signInWithGoogle = async () => {
-  await authStore.signInWithGoogle()
+const onSubmit = async () => {
+  if (!validate()) return
+  try {
+    await auth.login(email.value.trim(), password.value, remember.value)
+    await router.push("/account")
+  } catch {
+    submitError.value = auth.error || "Login failed"
+  }
 }
 </script>
+

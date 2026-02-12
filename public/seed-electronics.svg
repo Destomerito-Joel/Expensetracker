@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="900" viewBox="0 0 900 900">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0f172a"/>
+      <stop offset="1" stop-color="#064e3b"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="900" fill="url(#g)"/>
+  <rect x="70" y="70" width="760" height="760" rx="48" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.16)"/>
+  <g fill="#ffffff" opacity="0.9">
+    <path d="M450 250c-66.3 0-120 53.7-120 120s53.7 120 120 120 120-53.7 120-120-53.7-120-120-120zm0 60c33.1 0 60 26.9 60 60s-26.9 60-60 60-60-26.9-60-60 26.9-60 60-60z"/>
+    <path d="M285 610c0-74.6 74-135 165-135s165 60.4 165 135v25H285v-25z" opacity="0.75"/>
+  </g>
+  <text x="450" y="760" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial" font-size="40" font-weight="700" fill="#ffffff">Electronics</text>
+</svg>

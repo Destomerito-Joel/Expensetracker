@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="900" viewBox="0 0 900 900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0f172a"/>
+      <stop offset="1" stop-color="#0b7660"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="900" fill="url(#bg)"/>
+  <rect x="95" y="120" width="710" height="660" rx="70" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.18)"/>
+  <g fill="none" stroke="#ffffff" stroke-width="34" stroke-linecap="round" stroke-linejoin="round" opacity="0.9">
+    <rect x="240" y="280" width="420" height="280" rx="40"/>
+    <path d="M240 520h420"/>
+    <path d="M340 610h220"/>
+    <path d="M380 380l70 70 120-140"/>
+  </g>
+  <text x="450" y="755" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial" font-size="42" font-weight="700" fill="#ffffff">Golf Simulator</text>
+</svg>

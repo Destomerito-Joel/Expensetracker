@@ -10,14 +10,52 @@ import {
   signInWithRedirect,
   getRedirectResult,
   sendPasswordResetEmail,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
   type User,
 } from "firebase/auth"
-import { doc, setDoc, getDoc } from "firebase/firestore"
+import { doc, setDoc, getDoc, serverTimestamp, updateDoc } from "firebase/firestore"
+
+type UserProfileDoc = {
+  email: string
+  createdAt: any
+  updatedAt: any
+  profile: {
+    firstName: string
+    lastName: string
+    phone: string
+    defaultHand: "right" | "left"
+  }
+  preferences: {
+    orderUpdates: boolean
+    productDrops: boolean
+    stories: boolean
+  }
+  addresses: Array<{
+    id: string
+    label: string
+    name: string
+    line1: string
+    line2: string
+    city: string
+    postcode: string
+    country: string
+    isDefault: boolean
+  }>
+}
 
 export const useAuthenticationStore = defineStore("authentication", () => {
   const user = ref<User | null>(null)
   const loading = ref(false)
   const error = ref("")
+
+  const authReady = ref(false)
+  let authReadyPromise: Promise<void> | null = null
+
+  const userDoc = ref<UserProfileDoc | null>(null)
+  const userDocLoading = ref(false)
+  const userDocError = ref("")
 
   // ──────────────────────────────
   // Firebase helpers
@@ -39,7 +77,29 @@ export const useAuthenticationStore = defineStore("authentication", () => {
     const { auth } = getFirebase()
     onAuthStateChanged(auth, (firebaseUser) => {
       user.value = firebaseUser
+      authReady.value = true
+      if (!firebaseUser) {
+        userDoc.value = null
+      }
     })
+  }
+
+  const ensureAuthReady = async () => {
+    if (!process.client) return
+    if (authReady.value) return
+
+    if (!authReadyPromise) {
+      authReadyPromise = new Promise<void>((resolve) => {
+        const stop = setInterval(() => {
+          if (authReady.value) {
+            clearInterval(stop)
+            resolve()
+          }
+        }, 25)
+      })
+    }
+
+    await authReadyPromise
   }
 
   // ──────────────────────────────
@@ -47,8 +107,88 @@ export const useAuthenticationStore = defineStore("authentication", () => {
   // ──────────────────────────────
   const fetchUser = async () => {
     if (!process.client) return
+    await ensureAuthReady()
     const { auth } = getFirebase()
     user.value = auth.currentUser
+  }
+
+  const createUserDocIfMissing = async (uid: string, email: string) => {
+    const { db } = getFirebase()
+    const userRef = doc(db, "users", uid)
+    const snap = await getDoc(userRef)
+    if (snap.exists()) return
+
+    const data: UserProfileDoc = {
+      email,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      profile: {
+        firstName: "",
+        lastName: "",
+        phone: "",
+        defaultHand: "right",
+      },
+      preferences: {
+        orderUpdates: true,
+        productDrops: true,
+        stories: false,
+      },
+      addresses: [],
+    }
+
+    await setDoc(userRef, data)
+  }
+
+  const fetchUserDoc = async () => {
+    if (!process.client) return
+    if (!user.value) {
+      userDoc.value = null
+      return
+    }
+
+    userDocLoading.value = true
+    userDocError.value = ""
+
+    try {
+      const { db } = getFirebase()
+      const uid = user.value.uid
+      const email = user.value.email ?? ""
+
+      await createUserDocIfMissing(uid, email)
+
+      const snap = await getDoc(doc(db, "users", uid))
+      userDoc.value = (snap.data() as UserProfileDoc) ?? null
+    } catch (err: any) {
+      userDoc.value = null
+      userDocError.value = err?.message ?? "Failed to load profile"
+      throw err
+    } finally {
+      userDocLoading.value = false
+    }
+  }
+
+  const updateUserDoc = async (patch: Partial<UserProfileDoc>) => {
+    if (!process.client) return
+    if (!user.value) throw new Error("Not authenticated")
+
+    userDocLoading.value = true
+    userDocError.value = ""
+
+    try {
+      const { db } = getFirebase()
+      const uid = user.value.uid
+      await updateDoc(doc(db, "users", uid), {
+        ...patch,
+        updatedAt: serverTimestamp(),
+      } as any)
+
+      await fetchUserDoc()
+    } catch (err: any) {
+      userDocError.value = err?.message ?? "Failed to save profile"
+      throw err
+    } finally {
+      userDocLoading.value = false
+    }
   }
 
   // ──────────────────────────────
@@ -63,15 +203,8 @@ export const useAuthenticationStore = defineStore("authentication", () => {
       const { auth, db } = getFirebase()
       const cred = await createUserWithEmailAndPassword(auth, email, password)
 
-      // Save Firestore document (optional password storage; not recommended in prod)
-      await setDoc(doc(db, "users", cred.user.uid), {
-        email,
-        password, 
-        createdAt: Date.now(),
-        allExpenses: [],
-        recurringPayments: [],
-        total: 0,
-      })
+      void db
+      await createUserDocIfMissing(cred.user.uid, email)
 
       user.value = cred.user
     } catch (err: any) {
@@ -85,14 +218,17 @@ export const useAuthenticationStore = defineStore("authentication", () => {
   // ──────────────────────────────
   // Login
   // ──────────────────────────────
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, remember = true) => {
     if (!process.client) return
     loading.value = true
     error.value = ""
 
     try {
       const { auth } = getFirebase()
+      await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence)
       const cred = await signInWithEmailAndPassword(auth, email, password)
+
+      await createUserDocIfMissing(cred.user.uid, cred.user.email ?? email)
       user.value = cred.user
     } catch (err: any) {
       error.value = err.message || "Login failed"
@@ -126,23 +262,11 @@ export const useAuthenticationStore = defineStore("authentication", () => {
     if (!process.client) return
 
     try {
-      const { auth, db } = getFirebase()
+      const { auth } = getFirebase()
       const result = await getRedirectResult(auth)
       if (!result?.user) return
 
-      const userRef = doc(db, "users", result.user.uid)
-      const snap = await getDoc(userRef)
-
-      if (!snap.exists()) {
-        await setDoc(userRef, {
-          email: result.user.email,
-          password: null,
-          createdAt: Date.now(),
-          allExpenses: [],
-          recurringPayments: [],
-          total: 0,
-        })
-      }
+      await createUserDocIfMissing(result.user.uid, result.user.email ?? "")
 
       user.value = result.user
     } catch (err) {
@@ -201,6 +325,10 @@ export const useAuthenticationStore = defineStore("authentication", () => {
     user,
     loading,
     error,
+    authReady,
+    userDoc,
+    userDocLoading,
+    userDocError,
     signup,
     login,
     signInWithGoogle,
@@ -210,5 +338,8 @@ export const useAuthenticationStore = defineStore("authentication", () => {
     updateProfile,
     initAuthListener,
     fetchUser, // ✅ added to prevent 500 errors
+    ensureAuthReady,
+    fetchUserDoc,
+    updateUserDoc,
   }
 })
