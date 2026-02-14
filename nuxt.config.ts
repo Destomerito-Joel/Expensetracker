@@ -3,6 +3,7 @@
 import { defineNuxtConfig } from "nuxt/config";
 
 export default defineNuxtConfig({
+  srcDir: "app/",
   // Nuxt compatibility date
   compatibilityDate: "2025-07-15",
 

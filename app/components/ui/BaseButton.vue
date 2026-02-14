@@ -8,7 +8,7 @@
       block ? 'w-full' : '',
     ]"
   >
-    <span v-if="loading" class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+    <span v-if="loading" class="mr-2 h-4 aw-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
     <slot />
   </button>
 </template>

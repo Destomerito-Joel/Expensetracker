@@ -94,6 +94,7 @@ const accountMenuOpen = ref(false)
 
 const accountItems = [
   { label: "Overview", href: "/account", icon: "pi pi-chart-line" },
+  { label: "Notifications", href: "/account/notifications", icon: "pi pi-bell" },
   { label: "Orders", href: "/account/orders", icon: "pi pi-file" },
   { label: "Wishlist", href: "/wishlist", icon: "pi pi-heart" },
   { label: "Addresses", href: "/account/addresses", icon: "pi pi-map-marker" },

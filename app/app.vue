@@ -2,12 +2,15 @@
   <NuxtLayout>
     <NuxtPage />
   </NuxtLayout>
+
+  <ToastHost />
 </template>
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useAuthenticationStore } from "~/stores/authentication"
 import { useCartStore } from "~/stores/cart"
+import ToastHost from "~/components/ui/ToastHost.vue"
 
 const authStore = useAuthenticationStore()
 authStore.initAuthListener()

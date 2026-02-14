@@ -2,14 +2,14 @@
   <Teleport to="body">
     <transition name="fade">
       <div
-        v-if="modelValue"
+        v-show="modelValue"
         class="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
         @click.self="close"
       />
     </transition>
     <transition name="slide">
       <aside
-        v-if="modelValue"
+        v-show="modelValue"
         class="fixed inset-y-0 right-0 z-50 flex w-full max-w-sm flex-col bg-white shadow-xl"
       >
         <header class="flex items-center justify-between border-b border-slate-200 px-4 py-3">
