@@ -1,6 +1,8 @@
 import { defineStore } from "pinia"
-import { computed, ref, watch } from "vue"
+import { computed, ref } from "vue"
 import { useRequestURL } from "#app"
+import { useNuxtApp } from "#app"
+import { addDoc, collection, deleteDoc, doc, getDocs, orderBy, query, serverTimestamp, updateDoc } from "firebase/firestore"
 
 export type ProductCard = {
   id: string
@@ -32,6 +34,9 @@ export type Product = {
   images?: string[]
   source: "api" | "admin"
 
+  createdAt?: any
+  updatedAt?: any
+
   // Admin-facing fields (optional for API products)
   sku?: string
   inventory?: number
@@ -49,8 +54,6 @@ type ApiResponse =
       error?: string
     }
 
-const ADMIN_STORAGE_KEY = "golf_admin_products_v1"
-
 const safeSlugify = (value: string) =>
   value
     .toLowerCase()
@@ -58,57 +61,81 @@ const safeSlugify = (value: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "")
 
-const makeId = () => {
-  if (process.client && typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (crypto as any).randomUUID() as string
-  }
-  return `admin_${Date.now()}_${Math.random().toString(16).slice(2)}`
+const stripUndefined = <T extends Record<string, any>>(obj: T) => {
+  const out: Record<string, any> = {}
+  Object.entries(obj).forEach(([k, v]) => {
+    if (v !== undefined) out[k] = v
+  })
+  return out as T
 }
 
+const ADMIN_PRODUCTS_COLLECTION = "adminProducts"
+
 export const useProductsStore = defineStore("products", () => {
+  const isClient = import.meta.client
+
   const apiProducts = ref<Product[]>([])
   const adminProducts = ref<Product[]>([])
+
+  const adminLoaded = ref(false)
 
   const loading = ref(false)
   const error = ref<string | null>(null)
   const hasFetched = ref(false)
 
-  const loadAdminFromStorage = () => {
-    if (!process.client) return
+  const getDb = () => {
+    if (!isClient) throw new Error("Firestore not available on server")
+    const { $firestore } = useNuxtApp()
+    if (!$firestore) throw new Error("Firestore not initialized")
+    return $firestore
+  }
+
+  const fetchAdminProducts = async () => {
+    if (!isClient) return
+    const db = getDb()
     try {
-      const raw = localStorage.getItem(ADMIN_STORAGE_KEY)
-      if (!raw) return
-      const parsed = JSON.parse(raw) as Product[]
-      adminProducts.value = Array.isArray(parsed)
-        ? parsed.map((p) => ({ ...p, source: "admin" as const }))
-        : []
-    } catch (e) {
-      console.error("Failed to load admin products", e)
+      const snap = await getDocs(query(collection(db, ADMIN_PRODUCTS_COLLECTION), orderBy("createdAt", "desc")))
+      adminProducts.value = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any), source: "admin" as const })) as Product[]
+    } finally {
+      adminLoaded.value = true
     }
   }
 
-  const persistAdmin = () => {
-    if (!process.client) return
-    try {
-      localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(adminProducts.value))
-    } catch (e) {
-      console.error("Failed to persist admin products", e)
-    }
-  }
-
-  if (process.client) {
-    loadAdminFromStorage()
-    watch(adminProducts, persistAdmin, { deep: true })
+  const getMillis = (value: any) => {
+    if (!value) return 0
+    if (typeof value === "number") return value
+    if (value instanceof Date) return value.getTime()
+    if (typeof value?.toMillis === "function") return value.toMillis()
+    if (typeof value?.seconds === "number") return value.seconds * 1000
+    return 0
   }
 
   const products = computed<Product[]>(() => {
-    const merged = [...adminProducts.value, ...apiProducts.value]
     const map = new Map<string, Product>()
-    merged.forEach((p) => {
+
+    // API first, then admin overrides
+    ;[...apiProducts.value, ...adminProducts.value].forEach((p) => {
       map.set(p.slug, p)
     })
-    return Array.from(map.values())
+
+    const list = Array.from(map.values())
+
+    // Default ordering: newest admin-created products first, then the rest.
+    list.sort((a, b) => {
+      const aAdmin = a.source === "admin"
+      const bAdmin = b.source === "admin"
+      if (aAdmin !== bAdmin) return aAdmin ? -1 : 1
+
+      if (aAdmin && bAdmin) {
+        const at = getMillis(a.createdAt) || getMillis(a.updatedAt)
+        const bt = getMillis(b.createdAt) || getMillis(b.updatedAt)
+        return bt - at
+      }
+
+      return 0
+    })
+
+    return list
   })
 
   const productCards = computed<ProductCard[]>(() =>
@@ -149,6 +176,12 @@ export const useProductsStore = defineStore("products", () => {
         source: "api" as const,
       }))
 
+      try {
+        await fetchAdminProducts()
+      } catch {
+        // ignore
+      }
+
       hasFetched.value = true
     } catch (e: any) {
       apiProducts.value = []
@@ -159,13 +192,26 @@ export const useProductsStore = defineStore("products", () => {
   }
 
   const ensureFetched = async () => {
+    // During SSR we can fetch the API catalog, but Firestore (client SDK) isn't available.
+    // After hydration, make sure we also pull admin-created products from Firestore.
+    if (isClient && hasFetched.value && !loading.value) {
+      if (!adminLoaded.value) {
+        try {
+          await fetchAdminProducts()
+        } catch {
+          // ignore
+        }
+      }
+      return
+    }
+
     if (hasFetched.value || loading.value) return
     await fetchProducts()
   }
 
   const getBySlug = (slug: string) => products.value.find((p) => p.slug === slug)
 
-  const addAdminProduct = (payload: {
+  const addAdminProduct = async (payload: {
     name: string
     slug?: string
     price: number
@@ -177,10 +223,37 @@ export const useProductsStore = defineStore("products", () => {
     status?: "Active" | "Draft"
     images?: string[]
   }) => {
+    if (!isClient) throw new Error("Not available on server")
+    const db = getDb()
+
     const slug = payload.slug?.trim() ? safeSlugify(payload.slug) : safeSlugify(payload.name)
+    const docRef = await addDoc(
+      collection(db, ADMIN_PRODUCTS_COLLECTION),
+      stripUndefined({
+        name: payload.name,
+        slug,
+        brand: "",
+        category: payload.category,
+        subtitle:
+          payload.subtitle?.trim() ||
+          (payload.description ? payload.description.slice(0, 140) : "Studio-built equipment for modern players."),
+        description: payload.description,
+        price: payload.price,
+        rating: 4.6,
+        reviewCount: 0,
+        stockStatus: "in-stock",
+        images: (payload.images ?? []).filter(Boolean),
+        sku: payload.sku,
+        inventory: payload.inventory,
+        status: payload.status ?? "Active",
+        source: "admin",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      } as any)
+    )
 
     const product: Product = {
-      id: makeId(),
+      id: docRef.id,
       name: payload.name,
       slug,
       brand: "",
@@ -194,18 +267,23 @@ export const useProductsStore = defineStore("products", () => {
       rating: 4.6,
       reviewCount: 0,
       stockStatus: "in-stock",
-      images: payload.images ?? [],
+      images: (payload.images ?? []).filter(Boolean),
       source: "admin",
       sku: payload.sku,
       inventory: payload.inventory,
       status: payload.status ?? "Active",
+      createdAt: new Date(),
+      updatedAt: new Date(),
     }
 
     adminProducts.value = [product, ...adminProducts.value]
     return product
   }
 
-  const updateAdminProduct = (id: string, patch: Partial<Omit<Product, "id" | "source">>) => {
+  const updateAdminProduct = async (id: string, patch: Partial<Omit<Product, "id" | "source">>) => {
+    if (!isClient) return
+    const db = getDb()
+
     const idx = adminProducts.value.findIndex((p) => p.id === id)
     if (idx === -1) return
 
@@ -219,18 +297,33 @@ export const useProductsStore = defineStore("products", () => {
       id: current.id,
       slug: nextSlug,
       source: "admin",
+      updatedAt: new Date(),
     }
 
     adminProducts.value[idx] = updated
+
+    const { source, id: _id, ...firePatch } = updated as any
+    await updateDoc(
+      doc(db, ADMIN_PRODUCTS_COLLECTION, id),
+      stripUndefined({
+        ...firePatch,
+        source: "admin",
+        updatedAt: serverTimestamp(),
+      } as any)
+    )
   }
 
-  const deleteAdminProduct = (id: string) => {
+  const deleteAdminProduct = async (id: string) => {
+    if (!isClient) return
+    const db = getDb()
     adminProducts.value = adminProducts.value.filter((p) => p.id !== id)
+    await deleteDoc(doc(db, ADMIN_PRODUCTS_COLLECTION, id))
   }
 
   return {
     apiProducts,
     adminProducts,
+    adminLoaded,
     products,
     productCards,
     loading,
@@ -238,6 +331,7 @@ export const useProductsStore = defineStore("products", () => {
     hasFetched,
     fetchProducts,
     ensureFetched,
+    fetchAdminProducts,
     getBySlug,
     addAdminProduct,
     updateAdminProduct,

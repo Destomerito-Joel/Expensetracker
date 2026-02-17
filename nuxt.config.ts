@@ -41,6 +41,10 @@ export default defineNuxtConfig({
 
   // Runtime config
   runtimeConfig: {
+    amadeusApiKey: process.env.AMADEUS_API_KEY,
+    amadeusApiSecret: process.env.AMADEUS_API_SECRET,
+    googlePlacesApiKey: process.env.GOOGLE_PLACES_API_KEY,
+    hotelsApiKey: process.env.HOTELS_API_KEY,
     public: {
         firebaseApiKey: process.env.NUXT_PUBLIC_FIREBASE_API_KEY,
       firebaseAuthDomain: process.env.NUXT_PUBLIC_FIREBASE_AUTH_DOMAIN,

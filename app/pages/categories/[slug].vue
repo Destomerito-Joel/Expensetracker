@@ -41,7 +41,10 @@
       </div>
     </div>
 
-    <div v-if="productsStore.loading && products.length === 0" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <div
+      v-if="(!isClient) || (productsStore.loading && products.length === 0) || (!productsStore.adminLoaded)"
+      class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+    >
       <div
         v-for="i in 6"
         :key="i"
@@ -105,7 +108,16 @@ definePageMeta({
 const route = useRoute()
 
 const productsStore = useProductsStore()
+const isClient = import.meta.client
 await productsStore.ensureFetched()
+
+if (isClient && !productsStore.adminLoaded) {
+  try {
+    await productsStore.fetchAdminProducts()
+  } catch {
+    // ignore
+  }
+}
 
 const normalizeCategoryLabel = (value: string) => {
   const v = value.toLowerCase()
@@ -152,6 +164,15 @@ const toSlug = (value: string) =>
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "")
+
+const getMillis = (value: any) => {
+  if (!value) return 0
+  if (typeof value === "number") return value
+  if (value instanceof Date) return value.getTime()
+  if (typeof value?.toMillis === "function") return value.toMillis()
+  if (typeof value?.seconds === "number") return value.seconds * 1000
+  return 0
+}
 
 const categorySlug = computed(() => route.params.slug as string)
 
@@ -225,7 +246,22 @@ const products = computed<ProductCardProduct[]>(() => {
     })
     : base
 
-  return filtered.map((p) => ({
+  const sorted = [...filtered]
+  sorted.sort((a, b) => {
+    const aAdmin = a.source === "admin"
+    const bAdmin = b.source === "admin"
+    if (aAdmin !== bAdmin) return aAdmin ? -1 : 1
+
+    if (aAdmin && bAdmin) {
+      const at = getMillis((a as any).createdAt) || getMillis((a as any).updatedAt)
+      const bt = getMillis((b as any).createdAt) || getMillis((b as any).updatedAt)
+      return bt - at
+    }
+
+    return 0
+  })
+
+  return sorted.map((p) => ({
     id: p.id,
     name: p.name,
     slug: p.slug,

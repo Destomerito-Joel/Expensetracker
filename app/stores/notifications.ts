@@ -14,7 +14,15 @@ import { useAuthenticationStore } from "~/stores/authentication"
 
 export type UserNotification = {
   id: string
-  type: "wallet-credit" | "wallet-debit" | "checkout-success"
+  type:
+    | "wallet-credit"
+    | "wallet-debit"
+    | "checkout-success"
+    | "reservation-requested"
+    | "payment-received"
+    | "reservation-confirmed"
+    | "reservation-completed"
+    | "reservation-cancelled"
   title: string
   message: string
   createdAt: any

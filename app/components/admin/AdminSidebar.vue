@@ -35,6 +35,7 @@ const items = [
   { label: "Overview", href: "/admin", icon: "pi pi-th-large" },
   { label: "Products", href: "/admin/products", icon: "pi pi-box" },
   { label: "Orders", href: "/admin/orders", icon: "pi pi-file" },
+  { label: "Golf Stays", href: "/admin/golf-stays/reservations", icon: "pi pi-map" },
   { label: "Users", href: "/admin/users", icon: "pi pi-users" },
   { label: "Categories", href: "/admin/categories", icon: "pi pi-folder" },
   { label: "Blog", href: "/admin/blog", icon: "pi pi-book" },

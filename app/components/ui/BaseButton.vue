@@ -8,7 +8,7 @@
       block ? 'w-full' : '',
     ]"
   >
-    <span v-if="loading" class="mr-2 h-4 aw-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+    <span v-if="loading" class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current/30 border-t-current" />
     <slot />
   </button>
 </template>
@@ -49,9 +49,9 @@ const variantClasses = computed(() => {
     case "secondary":
       return "bg-slate-100 text-slate-900 hover:bg-slate-200"
     case "ghost":
-      return "bg-transparent text-slate-900 hover:bg-slate-100"
+      return "bg-transparent text-current hover:bg-white/10"
     case "outline":
-      return "border border-slate-300 bg-white text-slate-900 hover:bg-slate-50"
+      return "border border-current/25 bg-transparent text-current hover:bg-white/10"
     default:
       return "bg-slate-900 text-white hover:bg-slate-800"
   }

@@ -22,6 +22,7 @@
 
         <nav class="hidden items-center gap-6 text-sm font-medium text-slate-700 lg:flex">
           <NuxtLink to="/shop" class="hover:text-slate-900">Shop</NuxtLink>
+          <NuxtLink to="/golf-stays" class="hover:text-slate-900">Golf Stays</NuxtLink>
           <NuxtLink to="/donate" class="hover:text-slate-900">Donate</NuxtLink>
           <NuxtLink to="/blog" class="hover:text-slate-900">Stories</NuxtLink>
           <NuxtLink to="/about" class="hover:text-slate-900">About</NuxtLink>

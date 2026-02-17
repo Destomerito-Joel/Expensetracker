@@ -110,6 +110,34 @@
       </div>
     </section>
 
+    <section :ref="setReveal" class="reveal rounded-3xl border border-slate-200 bg-white/80 p-6 backdrop-blur sm:p-8">
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div class="space-y-1">
+          <p class="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-700">Partnerships</p>
+          <h2 class="text-base font-semibold tracking-tight text-slate-900">Trusted by teams who move golf forward</h2>
+          <p class="text-sm text-slate-600">Payments, travel, resorts, and leading golf retail partners.</p>
+        </div>
+        <p class="text-[11px] text-slate-500">Selected partners</p>
+      </div>
+
+      <div class="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div class="partner-marquee relative">
+          <div class="partner-track">
+            <div class="partner-row">
+              <div v-for="p in partners" :key="`a-${p.name}`" class="partner-badge">
+                <img :src="p.logo" :alt="p.name" class="partner-logo" loading="lazy" />
+              </div>
+            </div>
+            <div class="partner-row" aria-hidden="true">
+              <div v-for="p in partners" :key="`b-${p.name}`" class="partner-badge">
+                <img :src="p.logo" :alt="p.name" class="partner-logo" loading="lazy" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section :ref="setReveal" class="reveal space-y-4">
       <div class="flex items-end justify-between gap-4">
         <div>
@@ -225,6 +253,59 @@
       <ProductGrid v-else :products="featuredProducts" />
     </section>
 
+    <section :ref="setReveal" class="reveal">
+      <div class="relative overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-900 p-6 text-white sm:p-8">
+        <img
+          src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=2000&q=80"
+          alt="Golf resort stays"
+          class="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-35"
+          loading="lazy"
+        />
+        <div class="pointer-events-none absolute inset-0 bg-gradient-to-r from-slate-900/85 via-slate-900/55 to-transparent" />
+        <div class="relative z-10 grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:items-end">
+          <div class="space-y-3">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.25em] text-emerald-200">New</p>
+            <h2 class="text-xl font-semibold tracking-tight sm:text-2xl">Golf Stays</h2>
+            <p class="max-w-xl text-sm text-slate-200">
+              Reserve premium resorts and hotels near championship courses across the USA. Concierge-led confirmations and support-based payment.
+            </p>
+          </div>
+          <div class="flex flex-wrap gap-3 lg:justify-end">
+            <NuxtLink to="/golf-stays">
+              <BaseButton size="lg">Explore Golf Stays</BaseButton>
+            </NuxtLink>
+            <NuxtLink to="/golf-stays/search">
+              <BaseButton variant="ghost" size="lg">Search resorts</BaseButton>
+            </NuxtLink>
+          </div>
+        </div>
+
+        <div class="relative z-10 mt-8 grid gap-3 sm:grid-cols-3">
+          <div class="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
+            <div class="flex items-start justify-between gap-3">
+              <p class="text-xs font-semibold">Resorts & hotels</p>
+              <span class="pi pi-building text-sm text-emerald-200" />
+            </div>
+            <p class="mt-2 text-[11px] text-slate-200">Luxury stays near iconic courses, curated for golf-first travel.</p>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
+            <div class="flex items-start justify-between gap-3">
+              <p class="text-xs font-semibold">Vacation rentals</p>
+              <span class="pi pi-home text-sm text-emerald-200" />
+            </div>
+            <p class="mt-2 text-[11px] text-slate-200">Private villas and golf-friendly rentals for groups and long weekends.</p>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
+            <div class="flex items-start justify-between gap-3">
+              <p class="text-xs font-semibold">Concierge logistics</p>
+              <span class="pi pi-compass text-sm text-emerald-200" />
+            </div>
+            <p class="mt-2 text-[11px] text-slate-200">Support-led confirmations, itinerary help, and secure manual payment guidance.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section :ref="setReveal" class="reveal space-y-4">
       <div class="flex items-end justify-between gap-4">
         <div>
@@ -234,49 +315,23 @@
       </div>
 
       <div class="grid gap-4 lg:grid-cols-3">
-        <div class="rounded-2xl border border-slate-200 bg-white p-5">
-          <div class="flex items-center gap-1 text-amber-500">
-            <span class="pi pi-star-fill text-xs" />
-            <span class="pi pi-star-fill text-xs" />
-            <span class="pi pi-star-fill text-xs" />
-            <span class="pi pi-star-fill text-xs" />
-            <span class="pi pi-star-fill text-xs" />
+        <div v-for="t in testimonials" :key="t.name" class="rounded-2xl border border-slate-200 bg-white p-5">
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-1 text-amber-500">
+              <span v-for="i in t.stars" :key="i" class="pi pi-star-fill text-xs" />
+            </div>
+            <p class="text-[11px] text-slate-500">{{ t.date }}</p>
           </div>
-          <p class="mt-3 text-sm text-slate-700">
-            “Clean experience, fast delivery, and the product photos matched exactly. My new setup feels dialed.”
-          </p>
-          <p class="mt-4 text-xs font-semibold text-slate-900">Marcus N.</p>
-          <p class="text-xs text-slate-500">Single-digit handicap</p>
-        </div>
-
-        <div class="rounded-2xl border border-slate-200 bg-white p-5">
-          <div class="flex items-center gap-1 text-amber-500">
-            <span class="pi pi-star-fill text-xs" />
-            <span class="pi pi-star-fill text-xs" />
-            <span class="pi pi-star-fill text-xs" />
-            <span class="pi pi-star-fill text-xs" />
-            <span class="pi pi-star-fill text-xs" />
+          <p class="mt-3 text-sm text-slate-700">“{{ t.quote }}”</p>
+          <div class="mt-4 flex items-start justify-between gap-4">
+            <div>
+              <p class="text-xs font-semibold text-slate-900">{{ t.name }}</p>
+              <p class="text-xs text-slate-500">{{ t.subtitle }}</p>
+            </div>
+            <div class="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-700">
+              {{ t.tag }}
+            </div>
           </div>
-          <p class="mt-3 text-sm text-slate-700">
-            “The search and filters are on point. I found the exact accessory pack I wanted in minutes.”
-          </p>
-          <p class="mt-4 text-xs font-semibold text-slate-900">Aisha K.</p>
-          <p class="text-xs text-slate-500">Weekend competitor</p>
-        </div>
-
-        <div class="rounded-2xl border border-slate-200 bg-white p-5">
-          <div class="flex items-center gap-1 text-amber-500">
-            <span class="pi pi-star-fill text-xs" />
-            <span class="pi pi-star-fill text-xs" />
-            <span class="pi pi-star-fill text-xs" />
-            <span class="pi pi-star-fill text-xs" />
-            <span class="pi pi-star-fill text-xs" />
-          </div>
-          <p class="mt-3 text-sm text-slate-700">
-            “Great mix of premium and value picks. The accessories section is exactly what I needed before a trip.”
-          </p>
-          <p class="mt-4 text-xs font-semibold text-slate-900">Daniel R.</p>
-          <p class="text-xs text-slate-500">Travel golfer</p>
         </div>
       </div>
     </section>
@@ -445,6 +500,57 @@ const accessoriesBannerProduct = computed(() => {
 
 const accessoriesBannerImage = computed(() => accessoriesBannerProduct.value?.image ?? "")
 const accessoriesBannerAlt = computed(() => accessoriesBannerProduct.value?.name ?? "Accessories")
+
+const partners = [
+  { name: "Mastercard", logo: "https://cdn.simpleicons.org/mastercard/111827" },
+  { name: "Visa", logo: "https://cdn.simpleicons.org/visa/111827" },
+  { name: "American Express", logo: "https://cdn.simpleicons.org/americanexpress/111827" },
+  { name: "Stripe", logo: "https://cdn.simpleicons.org/stripe/111827" },
+  { name: "PayPal", logo: "https://cdn.simpleicons.org/paypal/111827" },
+  { name: "Booking.com", logo: "https://cdn.simpleicons.org/bookingdotcom/111827" },
+  { name: "Expedia", logo: "https://cdn.simpleicons.org/expedia/111827" },
+  { name: "Airbnb", logo: "https://cdn.simpleicons.org/airbnb/111827" },
+  { name: "Hilton", logo: "https://cdn.simpleicons.org/hilton/111827" },
+  { name: "Hyatt", logo: "https://cdn.simpleicons.org/hyatt/111827" },
+  { name: "Marriott", logo: "https://cdn.simpleicons.org/marriott/111827" },
+  { name: "PGA TOUR", logo: "https://cdn.simpleicons.org/pga-tour/111827" },
+  { name: "USGA", logo: "https://cdn.simpleicons.org/usga/111827" },
+  { name: "Topgolf", logo: "https://cdn.simpleicons.org/topgolf/111827" },
+  { name: "Titleist", logo: "https://cdn.simpleicons.org/titleist/111827" },
+  { name: "TaylorMade", logo: "https://cdn.simpleicons.org/taylormade/111827" },
+  { name: "Callaway", logo: "https://cdn.simpleicons.org/callaway/111827" },
+  { name: "FootJoy", logo: "https://cdn.simpleicons.org/footjoy/111827" },
+]
+
+const testimonials = [
+  {
+    name: "Marcus Nguyen",
+    subtitle: "Austin, TX · 7.2 handicap",
+    quote:
+      "Ordered a driver and a wedge setup before a Scottsdale trip—shipping updates were clear and everything arrived exactly when promised.",
+    stars: 5,
+    date: "Jan 2026",
+    tag: "Clubs",
+  },
+  {
+    name: "Aisha Khan",
+    subtitle: "Jersey City, NJ · Weekend league",
+    quote:
+      "The accessories picks felt curated, not random. I grabbed a glove + marker bundle and it was the best quality-to-price I’ve found online.",
+    stars: 5,
+    date: "Dec 2025",
+    tag: "Accessories",
+  },
+  {
+    name: "Daniel Romero",
+    subtitle: "San Diego, CA · Travel golfer",
+    quote:
+      "We used Golf Stays for a 4-person weekend—support confirmed everything quickly, and the check-in details were handled like a real concierge.",
+    stars: 5,
+    date: "Feb 2026",
+    tag: "Golf Stays",
+  },
+]
 </script>
 
 <style scoped>
@@ -494,5 +600,52 @@ const accessoriesBannerAlt = computed(() => accessoriesBannerProduct.value?.name
 
 .animate-float-slower {
   animation: floatSlower 9s ease-in-out infinite;
+}
+
+.partner-marquee {
+  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+
+.partner-track {
+  display: flex;
+  width: max-content;
+}
+
+.partner-row {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  animation: partnerScroll 26s linear infinite;
+}
+
+.partner-marquee:hover .partner-row {
+  animation-play-state: paused;
+}
+
+.partner-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid rgb(226 232 240);
+  background: rgb(248 250 252);
+  padding: 0.55rem 1rem;
+  white-space: nowrap;
+}
+
+.partner-logo {
+  height: 18px;
+  width: auto;
+  opacity: 0.9;
+  filter: grayscale(1);
+}
+
+@keyframes partnerScroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
 }
 </style>

@@ -142,6 +142,7 @@ const categoryItems = computed(() => {
 const primaryItems = computed(() => [
   { label: "Home", href: "/" },
   { label: "Shop", href: "/shop" },
+  { label: "Golf Stays", href: "/golf-stays" },
 ])
 
 const secondaryItems = computed(() => [

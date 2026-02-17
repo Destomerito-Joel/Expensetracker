@@ -7,6 +7,7 @@
       <div class="aspect-[4/3]">
         <img
           v-if="product.image"
+          :key="product.image"
           :src="product.image"
           :alt="product.name"
           class="h-full w-full object-cover"

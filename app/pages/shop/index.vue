@@ -101,7 +101,10 @@
         </div>
       </header>
 
-      <div v-if="productsStore.loading && productsStore.productCards.length === 0" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div
+        v-if="(!isClient) || (productsStore.loading && productsStore.productCards.length === 0) || (!productsStore.adminLoaded)"
+        class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+      >
         <div
           v-for="i in 6"
           :key="i"
@@ -238,7 +241,16 @@ definePageMeta({
 })
 
 const productsStore = useProductsStore()
+const isClient = import.meta.client
 await productsStore.ensureFetched()
+
+if (isClient && !productsStore.adminLoaded) {
+  try {
+    await productsStore.fetchAdminProducts()
+  } catch {
+    // ignore
+  }
+}
 
 const route = useRoute()
 
@@ -373,6 +385,26 @@ const toSlug = (value: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "")
 
+const getMillis = (value: any) => {
+  if (!value) return 0
+  if (typeof value === "number") return value
+  if (value instanceof Date) return value.getTime()
+  if (typeof value?.toMillis === "function") return value.toMillis()
+  if (typeof value?.seconds === "number") return value.seconds * 1000
+  return 0
+}
+
+const pinAdminFirst = (items: typeof productsStore.products) => {
+  const admin = items.filter((p) => p.source === "admin")
+  const rest = items.filter((p) => p.source !== "admin")
+  admin.sort((a, b) => {
+    const at = getMillis(a.createdAt) || getMillis(a.updatedAt)
+    const bt = getMillis(b.createdAt) || getMillis(b.updatedAt)
+    return bt - at
+  })
+  return { admin, rest }
+}
+
 const filteredProducts = computed(() => {
   let products = [...productsStore.products]
 
@@ -410,11 +442,6 @@ const filteredProducts = computed(() => {
     products = products.filter((p) => p.rating >= min)
   }
 
-  const shouldMixDefault =
-    activeFilterCount.value === 0 &&
-    !q &&
-    sort.value === "featured"
-
   switch (sort.value) {
     case "price-asc":
       products.sort((a, b) => a.price - b.price)
@@ -426,43 +453,57 @@ const filteredProducts = computed(() => {
       products.sort((a, b) => b.rating - a.rating)
       break
     default:
-      products.sort((a, b) => {
-        return (b.compareAt ?? b.price) - (a.compareAt ?? a.price)
-      })
-      break
-  }
+      // Keep admin-created products pinned at the top for the default view.
+      // (Newly created products should appear first.)
+      {
+        const { admin, rest } = pinAdminFirst(products)
 
-  if (shouldMixDefault) {
-    const normalizedOrder = preferredCategoryOrder.map((c) => toSlug(c))
+        const shouldMixDefault =
+          activeFilterCount.value === 0 &&
+          !q &&
+          sort.value === "featured"
 
-    const buckets = new Map<string, typeof products>()
-    products.forEach((p) => {
-      const key = toSlug(normalizeCategoryLabel(p.category ?? ""))
-      const list = buckets.get(key)
-      if (list) list.push(p)
-      else buckets.set(key, [p])
-    })
+        // Apply the existing "featured" ordering to the non-admin catalog.
+        rest.sort((a, b) => {
+          return (b.compareAt ?? b.price) - (a.compareAt ?? a.price)
+        })
 
-    const keysInOrder = [
-      ...normalizedOrder,
-      ...Array.from(buckets.keys()).filter((k) => !normalizedOrder.includes(k)),
-    ]
+        if (shouldMixDefault) {
+          const normalizedOrder = preferredCategoryOrder.map((c) => toSlug(c))
 
-    const mixed: typeof products = []
-    let added = true
-    while (added) {
-      added = false
-      for (const key of keysInOrder) {
-        const list = buckets.get(key)
-        if (!list || list.length === 0) continue
-        const next = list.shift()
-        if (!next) continue
-        mixed.push(next)
-        added = true
+          const buckets = new Map<string, typeof rest>()
+          rest.forEach((p) => {
+            const key = toSlug(normalizeCategoryLabel(p.category ?? ""))
+            const list = buckets.get(key)
+            if (list) list.push(p)
+            else buckets.set(key, [p])
+          })
+
+          const keysInOrder = [
+            ...normalizedOrder,
+            ...Array.from(buckets.keys()).filter((k) => !normalizedOrder.includes(k)),
+          ]
+
+          const mixed: typeof rest = []
+          let added = true
+          while (added) {
+            added = false
+            for (const key of keysInOrder) {
+              const list = buckets.get(key)
+              if (!list || list.length === 0) continue
+              const next = list.shift()
+              if (!next) continue
+              mixed.push(next)
+              added = true
+            }
+          }
+
+          products = [...admin, ...mixed]
+        } else {
+          products = [...admin, ...rest]
+        }
       }
-    }
-
-    products = mixed
+      break
   }
 
   return products
