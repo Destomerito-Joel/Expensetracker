@@ -58,7 +58,7 @@ export const useGolfStaysStore = defineStore("golf-stays", () => {
     checkOut?: string
     guests?: number
   }) => {
-    if (!process.client) return
+    if (!import.meta.client) return
     loading.value = true
     error.value = null
 
@@ -91,7 +91,7 @@ export const useGolfStaysStore = defineStore("golf-stays", () => {
   }
 
   const fetchPropertyById = async (id: string) => {
-    if (!process.client) return
+    if (!import.meta.client) return
     if (!id) return
 
     if (!properties.value.length) {
@@ -119,7 +119,7 @@ export const useGolfStaysStore = defineStore("golf-stays", () => {
     guests: number
     totalPrice: number
   }) => {
-    if (!process.client) return ""
+    if (!import.meta.client) return ""
 
     loading.value = true
     error.value = null
@@ -167,7 +167,7 @@ export const useGolfStaysStore = defineStore("golf-stays", () => {
   }
 
   const fetchReservationById = async (id: string) => {
-    if (!process.client) return null
+    if (!import.meta.client) return null
 
     const { $firestore } = useNuxtApp()
     if (!$firestore) throw new Error("Firestore not initialized")
@@ -179,7 +179,7 @@ export const useGolfStaysStore = defineStore("golf-stays", () => {
   }
 
   const fetchMyReservations = async () => {
-    if (!process.client) return
+    if (!import.meta.client) return
 
     loading.value = true
     error.value = null

@@ -92,15 +92,6 @@
             {{ submitError }}
           </div>
 
-          <div v-if="walletWarning" class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
-            <p class="font-medium">
-              Insufficient wallet balance. Please contact support to fund your account.
-            </p>
-            <NuxtLink to="/account" class="mt-2 inline-flex text-[11px] font-medium text-amber-900 underline">
-              Go to wallet
-            </NuxtLink>
-          </div>
-
           <div class="space-y-3 text-xs text-slate-600">
             <div>
               <p class="font-semibold text-slate-900">
@@ -161,7 +152,7 @@
           </div>
         </div>
         <p class="text-[11px] text-slate-500">
-          You’ll receive a detailed confirmation email once your order is placed. Payment integration will plug in here later.
+          Payment is processed securely via Paystack.
         </p>
       </CartSummary>
     </div>
@@ -179,7 +170,6 @@ import CartSummary from "~/components/cart/CartSummary.vue"
 import BaseButton from "~/components/ui/BaseButton.vue"
 import { useCartStore } from "~/stores/cart"
 import { useAuthenticationStore } from "~/stores/authentication"
-import { useWalletStore } from "~/stores/wallet"
 import { useNotificationsStore } from "~/stores/notifications"
 import { useToastsStore } from "~/stores/toasts"
 import { addDoc, collection, serverTimestamp } from "firebase/firestore"
@@ -193,15 +183,12 @@ const cart = useCartStore()
 const { subtotal, items } = storeToRefs(cart)
 
 const auth = useAuthenticationStore()
-const wallet = useWalletStore()
 const notifications = useNotificationsStore()
 const toasts = useToastsStore()
 
-const walletWarning = ref(false)
 const submitError = ref("")
 const placingOrder = ref(false)
-
-const walletBalance = computed(() => Number(auth.userDoc?.walletBalance ?? wallet.balance ?? 0))
+const paymentReference = ref("")
 
 const shippingFee = computed(() => {
   const method = String(form.shippingMethod)
@@ -223,7 +210,7 @@ const totalPayable = computed(() => {
 const placeOrderDisabled = computed(() => {
   if (currentStep.value !== steps.length - 1) return false
   if (!auth.user) return false
-  return walletBalance.value < totalPayable.value
+  return totalPayable.value <= 0
 })
 
 const steps = [
@@ -299,16 +286,15 @@ const shippingOptions = [
 ]
 
 onMounted(async () => {
-  if (!process.client) return
+  if (!import.meta.client) return
   submitError.value = ""
-  walletWarning.value = false
+  paymentReference.value = ""
 
   try {
     await auth.ensureAuthReady()
     await auth.fetchUser()
     if (auth.user) {
       await auth.fetchUserDoc()
-      wallet.syncFromAuthDoc()
     }
   } catch {
     // Keep checkout usable for guest flows.
@@ -317,7 +303,7 @@ onMounted(async () => {
 
 const nextStep = async () => {
   submitError.value = ""
-  walletWarning.value = false
+  paymentReference.value = ""
 
   if (currentStep.value < steps.length - 1) {
     currentStep.value++
@@ -336,25 +322,48 @@ const nextStep = async () => {
     }
 
     await auth.fetchUserDoc()
-    wallet.syncFromAuthDoc()
 
-    if (walletBalance.value < totalPayable.value) {
-      walletWarning.value = true
-      return
-    }
+    const runtimeConfig = useRuntimeConfig()
+    const publicKey = (runtimeConfig.public as any)?.paystackPublicKey as string | undefined
+    if (!publicKey) throw new Error("Paystack public key is missing. Set NUXT_PUBLIC_PAYSTACK_PUBLIC_KEY in your environment.")
+    if (!import.meta.client) throw new Error("Payment can only be started in the browser.")
 
-    await wallet.deductBalance({
-      amount: totalPayable.value,
-      description: `Checkout payment (${items.value.length} item${items.value.length === 1 ? "" : "s"})`,
-    })
+    await ensurePaystackLoaded()
+    if (!(window as any).PaystackPop) throw new Error("Paystack failed to load. Please refresh and try again.")
 
     const { $firestore } = useNuxtApp()
     if (!$firestore) throw new Error("Firestore not initialized")
 
+    const reference = `order_${Date.now()}_${Math.random().toString(16).slice(2)}`
+    await new Promise<void>((resolve, reject) => {
+      const handler = (window as any).PaystackPop.setup({
+        key: publicKey,
+        email: String(form.email || auth.user?.email || "").trim() || donorFallbackEmail(auth.user?.uid),
+        amount: Math.round(Number(totalPayable.value) * 100),
+        currency: "USD",
+        ref: reference,
+        metadata: {
+          custom_fields: [
+            { display_name: "First name", variable_name: "first_name", value: form.firstName },
+            { display_name: "Last name", variable_name: "last_name", value: form.lastName },
+            { display_name: "Phone", variable_name: "phone", value: form.phone },
+            { display_name: "Items", variable_name: "items_count", value: String(items.value.length) },
+          ],
+        },
+        callback: (response: any) => {
+          paymentReference.value = response?.reference || reference
+          resolve()
+        },
+        onClose: () => reject(new Error("Payment was cancelled.")),
+      })
+      handler.openIframe()
+    })
+
     const created = await addDoc(collection($firestore, "users", auth.user.uid, "orders"), {
       createdAt: serverTimestamp(),
       status: "Paid",
-      paidWith: "wallet",
+      paidWith: "paystack",
+      paymentReference: paymentReference.value,
       summary: items.value?.[0]?.name ?? "Order",
       subtotal: Number(subtotal.value),
       shipping: Number(shippingFee.value),
@@ -368,7 +377,7 @@ const nextStep = async () => {
 
     await notifications.notifyUser({
       uid: auth.user.uid,
-      type: "wallet-debit",
+      type: "payment-success",
       title: "Payment Successful",
       message: `You paid ${formatUSD(totalPayable.value)} for Order #${created.id}.`,
     })
@@ -393,6 +402,32 @@ const nextStep = async () => {
   } finally {
     placingOrder.value = false
   }
+}
+
+const ensurePaystackLoaded = async () => {
+  if (!import.meta.client) return
+  if ((window as any).PaystackPop) return
+
+  await new Promise<void>((resolve, reject) => {
+    const existing = document.querySelector('script[src="https://js.paystack.co/v1/inline.js"]') as HTMLScriptElement | null
+    if (existing) {
+      existing.addEventListener("load", () => resolve())
+      existing.addEventListener("error", () => reject(new Error("Failed to load Paystack")))
+      return
+    }
+
+    const script = document.createElement("script")
+    script.src = "https://js.paystack.co/v1/inline.js"
+    script.async = true
+    script.addEventListener("load", () => resolve())
+    script.addEventListener("error", () => reject(new Error("Failed to load Paystack")))
+    document.head.appendChild(script)
+  })
+}
+
+const donorFallbackEmail = (uid?: string) => {
+  const safe = String(uid || "guest").slice(0, 12)
+  return `${safe}@example.com`
 }
 
 const prevStep = () => {

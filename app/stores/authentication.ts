@@ -18,23 +18,10 @@ import {
 import { doc, setDoc, getDoc, serverTimestamp, updateDoc } from "firebase/firestore"
 import type { UserNotification } from "~/stores/notifications"
 
-export type WalletTransaction = {
-  id: string
-  type: "credit" | "debit"
-  amount: number
-  description: string
-  createdAt: any
-  processedBy: "admin" | "system"
-  status: "completed"
-  reference?: string
-}
-
 type UserProfileDoc = {
   email: string
   createdAt: any
   updatedAt: any
-  walletBalance: number
-  walletTransactions: WalletTransaction[]
   notifications?: UserNotification[]
   profile: {
     firstName: string
@@ -137,8 +124,6 @@ export const useAuthenticationStore = defineStore("authentication", () => {
       email,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      walletBalance: 0,
-      walletTransactions: [],
       notifications: [],
       profile: {
         firstName: "",

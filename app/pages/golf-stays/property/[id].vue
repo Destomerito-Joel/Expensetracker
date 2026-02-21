@@ -314,7 +314,7 @@ const bookNow = async () => {
 }
 
 onMounted(async () => {
-  if (!process.client) return
+  if (!import.meta.client) return
   const id = String(route.params.id ?? "")
   if (!stays.properties.length) {
     try {

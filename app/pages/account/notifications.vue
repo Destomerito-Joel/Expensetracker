@@ -6,7 +6,7 @@
           Notifications
         </h1>
         <p class="text-xs text-slate-500">
-          Wallet updates and order confirmations.
+          Payment updates and order confirmations.
         </p>
       </div>
 
@@ -34,7 +34,7 @@
         You're all caught up.
       </p>
       <p class="mt-2 text-xs text-slate-500">
-        Notifications will appear here when your wallet is updated or an order is placed.
+        Notifications will appear here when a payment is confirmed or an order is placed.
       </p>
     </div>
 
@@ -113,14 +113,12 @@ const formatDate = (value: any) => {
 }
 
 const iconClass = (type: UserNotification["type"]) => {
-  if (type === "wallet-credit") return "pi pi-plus-circle text-emerald-700"
-  if (type === "wallet-debit") return "pi pi-minus-circle text-red-700"
-  return "pi pi-check-circle text-slate-700"
+  if (type === "payment-success" || type === "checkout-success") return "pi pi-check-circle text-emerald-700"
+  return "pi pi-bell text-slate-700"
 }
 
 const iconBg = (type: UserNotification["type"]) => {
-  if (type === "wallet-credit") return "bg-emerald-50"
-  if (type === "wallet-debit") return "bg-red-50"
+  if (type === "payment-success" || type === "checkout-success") return "bg-emerald-50"
   return "bg-slate-100"
 }
 
@@ -143,7 +141,7 @@ const markAll = async () => {
 }
 
 onMounted(async () => {
-  if (!process.client) return
+  if (!import.meta.client) return
   submitError.value = ""
 
   try {
